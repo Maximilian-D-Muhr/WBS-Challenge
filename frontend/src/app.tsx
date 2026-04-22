@@ -1,12 +1,26 @@
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+
+import RootLayout from "./layouts/RootLayout";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import DashboardPage from "./pages/DashboardPage";
+import ChallengeDetailPage from "./pages/ChallengeDetailPage";
+import CreateChallengePage from "./pages/CreateChallengePage";
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      { index: true, element: <DashboardPage /> },
+      { path: "login", element: <LoginPage /> },
+      { path: "register", element: <RegisterPage /> },
+      { path: "create", element: <CreateChallengePage /> },
+      { path: "challenges/:id", element: <ChallengeDetailPage /> },
+    ],
+  },
+]);
+
 export default function App() {
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-base-200">
-      <div className="card w-96 bg-base-100 shadow-xl">
-        <div className="card-body items-center text-center">
-          <h1 className="card-title text-2xl">ChallengeTracker</h1>
-          <p className="text-sm opacity-70">Scaffold — phase 1 replaces this.</p>
-        </div>
-      </div>
-    </main>
-  );
+  return <RouterProvider router={router} />;
 }
