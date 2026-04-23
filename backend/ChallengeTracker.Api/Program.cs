@@ -1,8 +1,13 @@
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+
+using ChallengeTracker.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// OpenAPI + ProblemDetails
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 
@@ -17,7 +22,7 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-// Placeholder root endpoint — will be replaced by real endpoint groups in later phases.
+// Placeholder root endpoint — replaced by real endpoint groups in later phases.
 app.MapGet("/", () => "ChallengeTracker API");
 
 app.Run();
