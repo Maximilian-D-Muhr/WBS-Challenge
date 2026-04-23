@@ -1,16 +1,18 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+
 using ChallengeTracker.Api.Models;
 
 namespace ChallengeTracker.Api.Infrastructure;
 
-public class ApplicationDbContext : DbContext
+public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 {
   public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
       : base(options)
   {
   }
 
-  public DbSet<User> Users => Set<User>();
   public DbSet<Challenge> Challenges => Set<Challenge>();
   public DbSet<Membership> Memberships => Set<Membership>();
   public DbSet<ProgressEntry> ProgressEntries => Set<ProgressEntry>();
