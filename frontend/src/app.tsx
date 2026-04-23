@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import RootLayout from "./layouts/RootLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -12,11 +13,32 @@ const router = createBrowserRouter([
     path: "/",
     element: <RootLayout />,
     children: [
-      { index: true, element: <DashboardPage /> },
+      {
+        index: true,
+        element: (
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        ),
+      },
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },
-      { path: "create", element: <CreateChallengePage /> },
-      { path: "challenges/:id", element: <ChallengeDetailPage /> },
+      {
+        path: "create",
+        element: (
+          <ProtectedRoute>
+            <CreateChallengePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "challenges/:id",
+        element: (
+          <ProtectedRoute>
+            <ChallengeDetailPage />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
 ]);

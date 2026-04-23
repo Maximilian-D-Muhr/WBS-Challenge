@@ -1,7 +1,14 @@
 // Thin fetch wrapper for the ChallengeTracker API.
-// Auth (Bearer token injection) will be added in phase 2.
+// Token is injected by AuthContext via setAuthToken().
+
+import { parseProblem, type ApiError } from "./problemDetails";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5290";
+
+let currentToken: string | null = null;
+export function setAuthToken(token: string | null) {
+  currentToken = token;
+}
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
@@ -16,15 +23,16 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     method,
     headers: {
       "Content-Type": "application/json",
+      ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
-    // In phase 2 we map RFC 7807 ProblemDetails properly.
-    const text = await response.text();
-    throw new Error(`API ${response.status}: ${text}`);
+    const problem = await parseProblem(response);
+    const error: ApiError = Object.assign(new Error(problem.title), problem);
+    throw error;
   }
 
   if (response.status === 204) {
