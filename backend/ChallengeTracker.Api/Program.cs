@@ -10,6 +10,7 @@ using ChallengeTracker.Api.Api.Endpoints;
 using ChallengeTracker.Api.Application.Interfaces;
 using ChallengeTracker.Api.Application.Services;
 using ChallengeTracker.Api.Infrastructure;
+using ChallengeTracker.Api.Infrastructure.Data;
 using ChallengeTracker.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +42,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IChallengeService, ChallengeService>();
+builder.Services.AddScoped<DbSeeder>();
 
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
@@ -51,6 +54,10 @@ if (app.Environment.IsDevelopment())
 {
   app.MapOpenApi();
   app.MapScalarApiReference();
+
+  using var scope = app.Services.CreateScope();
+  var seeder = scope.ServiceProvider.GetRequiredService<DbSeeder>();
+  await seeder.SeedAsync();
 }
 
 app.UseExceptionHandler();
@@ -60,5 +67,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapAuthEndpoints();
+app.MapChallengeEndpoints();
 
 app.Run();
