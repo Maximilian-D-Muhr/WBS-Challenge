@@ -1,10 +1,14 @@
 import { useParams } from "react-router-dom";
 
+import { useAuth } from "../contexts/AuthContext";
 import { useChallenge } from "../data/challenges";
 import ChallengeStateBadge from "../components/ChallengeStateBadge";
+import JoinLeaveButton from "../components/JoinLeaveButton";
+import OwnerActions from "../components/OwnerActions";
 
 export default function ChallengeDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const { data: challenge, isLoading, isError } = useChallenge(id);
 
   if (isLoading) {
@@ -19,6 +23,8 @@ export default function ChallengeDetailPage() {
     return <div className="alert alert-error">Challenge not found.</div>;
   }
 
+  const isOwner = user?.id === challenge.ownerId;
+
   return (
     <section className="max-w-2xl">
       <div className="flex items-center gap-3 mb-1">
@@ -31,7 +37,7 @@ export default function ChallengeDetailPage() {
         <p className="mb-6 whitespace-pre-line">{challenge.description}</p>
       )}
 
-      <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm mb-6">
         <dt className="opacity-60">Starts</dt>
         <dd>{challenge.startDate}</dd>
         <dt className="opacity-60">Ends</dt>
@@ -42,8 +48,19 @@ export default function ChallengeDetailPage() {
         <dd>{challenge.visibility}</dd>
       </dl>
 
+      <div className="flex gap-2">
+        {isOwner ? (
+          <OwnerActions challengeId={challenge.id} status={challenge.status} />
+        ) : (
+          // Phase 4: we don't yet load the user's membership status from the detail endpoint,
+          // so the Join button always shows. Phase 5 will introduce a memberships query
+          // and render Leave when appropriate.
+          <JoinLeaveButton challengeId={challenge.id} membership={null} />
+        )}
+      </div>
+
       <p className="opacity-70 mt-8 text-sm">
-        Join / leave / log progress arrive in phase 4.
+        Progress logging arrives in phase 5.
       </p>
     </section>
   );
