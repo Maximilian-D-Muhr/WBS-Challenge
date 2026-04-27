@@ -61,4 +61,32 @@ public class ChallengeService : IChallengeService
         .Include(c => c.Memberships)
         .FirstOrDefaultAsync(c => c.Id == id);
   }
+
+  public async Task<Challenge?> StartAsync(Guid ownerId, Guid challengeId)
+  {
+    var challenge = await _db.Challenges.FindAsync(challengeId);
+    if (challenge is null) return null;
+    if (challenge.OwnerId != ownerId) return null;
+
+    if (challenge.Status != ChallengeStatus.Open)
+      throw new ArgumentException("Only open challenges can be started");
+
+    challenge.Status = ChallengeStatus.Running;
+    await _db.SaveChangesAsync();
+    return challenge;
+  }
+
+  public async Task<Challenge?> CompleteAsync(Guid ownerId, Guid challengeId)
+  {
+    var challenge = await _db.Challenges.FindAsync(challengeId);
+    if (challenge is null) return null;
+    if (challenge.OwnerId != ownerId) return null;
+
+    if (challenge.Status != ChallengeStatus.Running)
+      throw new ArgumentException("Only running challenges can be completed");
+
+    challenge.Status = ChallengeStatus.Completed;
+    await _db.SaveChangesAsync();
+    return challenge;
+  }
 }
