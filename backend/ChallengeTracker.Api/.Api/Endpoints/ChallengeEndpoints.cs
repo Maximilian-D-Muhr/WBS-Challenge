@@ -80,6 +80,60 @@ public static class ChallengeEndpoints
     .Produces<ChallengeResponseDto>()
     .ProducesProblem(StatusCodes.Status403Forbidden)
     .ProducesProblem(StatusCodes.Status404NotFound);
+
+    // POST /challenges/{id}/start — owner-only state transition Open → Running
+    group.MapPost("/{id:guid}/start", [Authorize] async (
+        Guid id,
+        IChallengeService service,
+        ClaimsPrincipal user) =>
+    {
+      var ownerId = GetUserId(user);
+      if (ownerId is null) return Results.Unauthorized();
+
+      try
+      {
+        var challenge = await service.StartAsync(ownerId.Value, id);
+        if (challenge is null)
+          return Results.Problem(title: "Not found or not the owner", statusCode: StatusCodes.Status404NotFound);
+
+        return Results.Ok(MapResponse(challenge));
+      }
+      catch (ArgumentException ex)
+      {
+        return Results.Problem(title: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+      }
+    })
+    .Produces<ChallengeResponseDto>()
+    .ProducesProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status401Unauthorized)
+    .ProducesProblem(StatusCodes.Status404NotFound);
+
+    // POST /challenges/{id}/complete — owner-only state transition Running → Completed
+    group.MapPost("/{id:guid}/complete", [Authorize] async (
+        Guid id,
+        IChallengeService service,
+        ClaimsPrincipal user) =>
+    {
+      var ownerId = GetUserId(user);
+      if (ownerId is null) return Results.Unauthorized();
+
+      try
+      {
+        var challenge = await service.CompleteAsync(ownerId.Value, id);
+        if (challenge is null)
+          return Results.Problem(title: "Not found or not the owner", statusCode: StatusCodes.Status404NotFound);
+
+        return Results.Ok(MapResponse(challenge));
+      }
+      catch (ArgumentException ex)
+      {
+        return Results.Problem(title: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+      }
+    })
+    .Produces<ChallengeResponseDto>()
+    .ProducesProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status401Unauthorized)
+    .ProducesProblem(StatusCodes.Status404NotFound);
   }
 
   private static Guid? GetUserId(ClaimsPrincipal user)
