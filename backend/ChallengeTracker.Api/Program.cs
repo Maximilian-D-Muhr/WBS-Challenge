@@ -55,6 +55,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
+builder.Services.AddScoped<IProgressEntryService, ProgressEntryService>();
+builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<DbSeeder>();
 
 builder.Services.AddOpenApi();
@@ -85,5 +87,7 @@ app.MapHealthEndpoints();
 app.MapAuthEndpoints();
 app.MapChallengeEndpoints();
 app.MapMembershipEndpoints();
+app.MapProgressEntryEndpoints();
+app.MapLeaderboardEndpoints();
 
 app.Run();

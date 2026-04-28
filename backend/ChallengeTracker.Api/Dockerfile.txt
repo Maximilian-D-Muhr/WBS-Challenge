@@ -1,0 +1,27 @@
+# Multi-stage build for the ChallengeTracker API.
+# Stage 1: build + publish with the .NET SDK.
+# Stage 2: copy the publish output into the slim aspnet runtime image.
+
+# ---- build ----
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Copy csproj first so the restore layer can be cached separately from the source.
+COPY ChallengeTracker.Api.csproj ./
+RUN dotnet restore ChallengeTracker.Api.csproj
+
+# Now copy the rest of the source and publish.
+COPY . ./
+RUN dotnet publish ChallengeTracker.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
+
+# ---- runtime ----
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# Container listens on 8080 (Kestrel default in container scenarios).
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+COPY --from=build /app/publish ./
+
+ENTRYPOINT ["dotnet", "ChallengeTracker.Api.dll"]
