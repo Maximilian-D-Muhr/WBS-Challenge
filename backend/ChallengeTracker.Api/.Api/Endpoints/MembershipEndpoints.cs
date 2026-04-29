@@ -85,6 +85,23 @@ public static class MembershipEndpoints
     .ProducesProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status401Unauthorized)
     .ProducesProblem(StatusCodes.Status404NotFound);
+
+    // GET /memberships/me/{challengeId} — what is my membership status for this challenge?
+    // Returns 204 if the caller has never joined.
+    group.MapGet("/me/{challengeId:guid}", [Authorize] async (
+        Guid challengeId,
+        IMembershipService service,
+        ClaimsPrincipal user) =>
+    {
+      var userId = GetUserId(user);
+      if (userId is null) return Results.Unauthorized();
+
+      var membership = await service.GetMineAsync(userId.Value, challengeId);
+      return membership is null ? Results.NoContent() : Results.Ok(MapResponse(membership));
+    })
+    .Produces<MembershipResponseDto>(StatusCodes.Status200OK)
+    .Produces(StatusCodes.Status204NoContent)
+    .ProducesProblem(StatusCodes.Status401Unauthorized);
   }
 
   private static Guid? GetUserId(ClaimsPrincipal user)
