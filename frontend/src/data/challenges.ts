@@ -1,6 +1,6 @@
-// TanStack Query hooks for the Challenge endpoints.
+// TanStack Query hooks + mutations for the Challenge endpoints.
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../utils/api";
 import type { ChallengeStatus, ChallengeVisibility } from "../types/entities";
@@ -18,6 +18,15 @@ export type ChallengeResponse = {
   endDate: string;
   unitLabel: string;
   createdAt: string;
+};
+
+export type CreateChallengePayload = {
+  title: string;
+  description?: string;
+  visibility: ChallengeVisibility;
+  startDate: string; // "YYYY-MM-DD"
+  endDate: string;
+  unitLabel: string;
 };
 
 type ListParams = {
@@ -45,5 +54,38 @@ export function useChallenge(id: string | undefined) {
     queryKey: ["challenges", id],
     queryFn: () => api<ChallengeResponse>(`/challenges/${id}`),
     enabled: !!id,
+  });
+}
+
+export function useCreateChallenge() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateChallengePayload) =>
+      api<ChallengeResponse>("/challenges", { method: "POST", body: payload }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["challenges"] }),
+  });
+}
+
+export function useStartChallenge() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<ChallengeResponse>(`/challenges/${id}/start`, { method: "POST" }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["challenges"] });
+      qc.invalidateQueries({ queryKey: ["challenges", id] });
+    },
+  });
+}
+
+export function useCompleteChallenge() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<ChallengeResponse>(`/challenges/${id}/complete`, { method: "POST" }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["challenges"] });
+      qc.invalidateQueries({ queryKey: ["challenges", id] });
+    },
   });
 }
