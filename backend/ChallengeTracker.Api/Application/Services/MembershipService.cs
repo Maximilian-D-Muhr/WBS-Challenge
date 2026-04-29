@@ -84,4 +84,11 @@ public class MembershipService : IMembershipService
         .Include(m => m.Challenge)
         .FirstOrDefaultAsync(m => m.Id == id);
   }
+
+  // Phase 5 — used by GET /memberships/me/{challengeId} to drive the Join/Leave UI.
+  public async Task<Membership?> GetMineAsync(Guid userId, Guid challengeId)
+  {
+    return await _db.Memberships
+        .FirstOrDefaultAsync(m => m.UserId == userId && m.ChallengeId == challengeId);
+  }
 }
