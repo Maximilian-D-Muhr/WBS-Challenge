@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 
 import { useLogProgress } from "../data/progress";
-import { fieldErrors, type ApiError } from "../utils/problemDetails";
+import { fieldErrors, toastMessage, type ApiError } from "../utils/problemDetails";
 
 type Props = {
   challengeId: string;
@@ -45,7 +45,8 @@ export default function LogProgressForm({ challengeId, unitLabel }: Props) {
       } else if (apiErr.status === 409) {
         toast.error("You already logged for today.");
       } else {
-        toast.error(apiErr.title);
+        // Covers 429 (with Retry-After hint) and everything else.
+        toast.error(toastMessage(apiErr));
       }
     }
   }
