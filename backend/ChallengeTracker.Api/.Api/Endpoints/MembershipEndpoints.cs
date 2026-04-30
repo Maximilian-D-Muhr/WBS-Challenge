@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 using ChallengeTracker.Api.Api.Filters;
 using ChallengeTracker.Api.Application.Interfaces;
@@ -36,6 +37,7 @@ public static class MembershipEndpoints
       }
     })
     .WithValidation<CreateMembershipDto>()
+    .RequireRateLimiting("general-post")
     .Produces<MembershipResponseDto>(StatusCodes.Status201Created)
     .ProducesProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status401Unauthorized);
