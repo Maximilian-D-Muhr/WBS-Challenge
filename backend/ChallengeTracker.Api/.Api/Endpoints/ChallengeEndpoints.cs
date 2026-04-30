@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 using ChallengeTracker.Api.Api.Filters;
 using ChallengeTracker.Api.Application.Interfaces;
@@ -39,6 +40,7 @@ public static class ChallengeEndpoints
       return Results.Created(location, response);
     })
     .WithValidation<CreateChallengeDto>()
+    .RequireRateLimiting("general-post")
     .Produces<ChallengeResponseDto>(StatusCodes.Status201Created)
     .ProducesProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status401Unauthorized);
@@ -103,6 +105,7 @@ public static class ChallengeEndpoints
         return Results.Problem(title: ex.Message, statusCode: StatusCodes.Status400BadRequest);
       }
     })
+    .RequireRateLimiting("general-post")
     .Produces<ChallengeResponseDto>()
     .ProducesProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -130,6 +133,7 @@ public static class ChallengeEndpoints
         return Results.Problem(title: ex.Message, statusCode: StatusCodes.Status400BadRequest);
       }
     })
+    .RequireRateLimiting("general-post")
     .Produces<ChallengeResponseDto>()
     .ProducesProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status401Unauthorized)

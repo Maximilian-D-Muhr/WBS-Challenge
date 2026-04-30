@@ -1,7 +1,10 @@
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -52,6 +55,59 @@ builder.Services.AddCors(options =>
   });
 });
 
+// Rate limiting — two named policies, partitioned by user id (sub claim).
+// `progress-post` is generous because users will often log a few entries in a row.
+// `general-post` is tighter because joining/creating/state-transitioning is rarer.
+builder.Services.AddRateLimiter(options =>
+{
+  options.AddPolicy("progress-post", httpContext =>
+      RateLimitPartition.GetFixedWindowLimiter(
+          partitionKey: GetPartitionKey(httpContext),
+          factory: _ => new FixedWindowRateLimiterOptions
+          {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+          }));
+
+  options.AddPolicy("general-post", httpContext =>
+      RateLimitPartition.GetFixedWindowLimiter(
+          partitionKey: GetPartitionKey(httpContext),
+          factory: _ => new FixedWindowRateLimiterOptions
+          {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+          }));
+
+  options.OnRejected = async (context, ct) =>
+  {
+    context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+    if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retry))
+    {
+      context.HttpContext.Response.Headers.RetryAfter =
+          ((int)retry.TotalSeconds).ToString();
+    }
+
+    await context.HttpContext.Response.WriteAsJsonAsync(new
+    {
+      title = "Too many requests",
+      detail = "You're sending requests faster than allowed. Try again in a moment.",
+      status = 429
+    }, cancellationToken: ct);
+  };
+
+  static string GetPartitionKey(HttpContext context)
+  {
+    return context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? context.User.FindFirstValue("sub")
+        ?? "anon";
+  }
+});
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IChallengeService, ChallengeService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
@@ -82,6 +138,9 @@ app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Rate limiter sits after auth so the partition key resolves to the actual user.
+app.UseRateLimiter();
 
 app.MapHealthEndpoints();
 app.MapAuthEndpoints();
