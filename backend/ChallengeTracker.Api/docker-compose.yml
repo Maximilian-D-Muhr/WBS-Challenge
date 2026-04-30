@@ -1,0 +1,30 @@
+# Local-only stack for the ChallengeTracker API.
+# Run:   docker compose up
+# Stops: docker compose down
+# Wipes: docker compose down -v   (removes the SQLite volume too)
+
+services:
+  api:
+    build:
+      context: ./backend/ChallengeTracker.Api
+    container_name: ct-api
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Data Source=/app/data/challenge.db"
+      Jwt__Key: ${JWT_KEY:-replace-me-with-a-64-character-random-secret-please-change-this}
+      Jwt__Issuer: ${JWT_ISSUER:-challenge-tracker}
+      Jwt__Audience: ${JWT_AUDIENCE:-challenge-tracker-users}
+    volumes:
+      - challenge-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  challenge-data:
