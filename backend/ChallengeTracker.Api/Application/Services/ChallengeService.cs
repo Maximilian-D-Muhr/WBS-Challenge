@@ -49,9 +49,9 @@ public class ChallengeService : IChallengeService
     if (status.HasValue)
       query = query.Where(c => c.Status == status.Value);
 
-    return await query
-        .OrderByDescending(c => c.CreatedAt)
-        .ToListAsync();
+    // SQLite can't ORDER BY DateTimeOffset — materialize then sort client-side.
+    var list = await query.ToListAsync();
+    return list.OrderByDescending(c => c.CreatedAt).ToList();
   }
 
   public async Task<Challenge?> GetAsync(Guid id)
