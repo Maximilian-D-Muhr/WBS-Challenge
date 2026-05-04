@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -16,12 +17,23 @@ using ChallengeTracker.Api.Infrastructure;
 using ChallengeTracker.Api.Infrastructure.Data;
 using ChallengeTracker.Api.Models;
 
+// Don't auto-map JWT 'sub' claim to ClaimTypes.NameIdentifier — keep claim names intact.
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddIdentityCore<User>()
+builder.Services.AddIdentityCore<User>(options =>
+    {
+      // Demo-friendly password rules (relaxed from Identity defaults).
+      options.Password.RequireDigit = false;
+      options.Password.RequireLowercase = false;
+      options.Password.RequireUppercase = false;
+      options.Password.RequireNonAlphanumeric = false;
+      options.Password.RequiredLength = 6;
+    })
     .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
@@ -31,6 +43,8 @@ var jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configurati
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+      // Don't rename incoming `sub` to `ClaimTypes.NameIdentifier`.
+      options.MapInboundClaims = false;
       options.TokenValidationParameters = new TokenValidationParameters
       {
         ValidateIssuerSigningKey = true,
@@ -39,7 +53,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         ValidateAudience = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        NameClaimType = JwtRegisteredClaimNames.Sub
       };
     });
 builder.Services.AddAuthorization();
@@ -117,6 +132,13 @@ builder.Services.AddScoped<DbSeeder>();
 
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
+
+// Accept enums as strings on the wire ("Public" instead of 0).
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+  options.SerializerOptions.Converters.Add(
+      new System.Text.Json.Serialization.JsonStringEnumConverter());
+});
 
 var app = builder.Build();
 

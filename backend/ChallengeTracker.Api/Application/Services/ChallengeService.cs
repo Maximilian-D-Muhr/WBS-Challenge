@@ -31,6 +31,15 @@ public class ChallengeService : IChallengeService
     };
 
     _db.Challenges.Add(challenge);
+
+    // Owner is auto-enrolled as Active member so they can log progress on their own challenge.
+    _db.Memberships.Add(new Membership
+    {
+      UserId = ownerId,
+      ChallengeId = challenge.Id,
+      Status = MembershipStatus.Active
+    });
+
     await _db.SaveChangesAsync();
     return challenge;
   }
